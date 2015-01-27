@@ -15,7 +15,9 @@ typedef NS_ENUM(NSUInteger, TestTaskType) {
 };
 
 @interface SimpleTestStorage:NSObject<LxTaskStorage>
+
 @property (nonatomic, strong) NSMutableDictionary *store;
+
 @end
 
 @implementation SimpleTestStorage
@@ -78,22 +80,34 @@ typedef NS_ENUM(NSUInteger, TestTaskType) {
     return [NSSet setWithArray:[_store allKeys]];
 }
 
+
+#pragma mark - ForTest
+- (NSInteger)taskCount {
+    NSInteger count = 0;
+    for (NSString *key in _store) {
+        NSArray *t = _store[key];
+        count += t.count;
+    }
+    return count;
+}
+
 @end
 
 @interface LxTaskQueueTests : XCTestCase<LxTaskRequisition>
 
 @property (nonatomic, strong) LxTaskQueue *taskQueue;
 @property (nonatomic, strong) LxTaskRegister *reg;
+@property (nonatomic, strong) SimpleTestStorage *storage;
 @end
 
 @implementation LxTaskQueueTests
 
 - (void)setUp {
     [super setUp];
-    
+    self.storage = [SimpleTestStorage new];
     self.reg = [[LxTaskRegister alloc] init];
     [self.reg regRequisition:self];
-    [self.reg regStorage:[SimpleTestStorage new]];
+    [self.reg regStorage:self.storage];
 }
 
 - (void)tearDown {
@@ -102,7 +116,6 @@ typedef NS_ENUM(NSUInteger, TestTaskType) {
 }
 
 - (void)testExecuteSingleTaskCalled {
-    
     XCTestExpectation *expectation = [self expectationWithDescription:@"testExecuteSimpleTask"];
     
     void (^simpleTaskExecutor)(LxTask *task, LxTaskCompleteMarker completeMaker) = ^void(LxTask *task, LxTaskCompleteMarker completeMaker) {
@@ -146,6 +159,34 @@ typedef NS_ENUM(NSUInteger, TestTaskType) {
         LxTask *task = [[LxTask alloc] initWithType:kTestTaskTypeSimple data:data group:@"test" continueIfNotSuccess:NO];
         [self.taskQueue enqueueTask:task];
     }
+    
+    [self waitForExpectationsWithTimeout:2.0f handler:^(NSError *error) {
+        if(error)
+        {
+            NSLog(@"error is: %@", [error localizedDescription]);
+        }
+    }];
+}
+
+- (void)testAsyncCompleteTest {
+    XCTestExpectation *expectation = [self expectationWithDescription:@"testAsyncCompleteTest"];
+    
+    void (^simpleTaskExecutor)(LxTask *task, LxTaskCompleteMarker completeMaker) = ^void(LxTask *task, LxTaskCompleteMarker completeMaker) {
+        XCTAssertEqual([self.storage taskCount], 1);
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            completeMaker(task, LxTaskCompleteResultOk);
+            XCTAssertEqual([self.storage taskCount], 0);
+            [expectation fulfill];
+        });
+    };
+    
+    [self.reg regDataType:kTestTaskTypeSimple executor:simpleTaskExecutor cancelListener:nil];
+    self.taskQueue = [[LxTaskQueue alloc] initWithRegister:self.reg];
+    
+    
+    NSDictionary *data = @{};
+    LxTask *task = [[LxTask alloc] initWithType:kTestTaskTypeSimple data:data group:@"test" continueIfNotSuccess:NO];
+    [self.taskQueue enqueueTask:task];
     
     [self waitForExpectationsWithTimeout:2.0f handler:^(NSError *error) {
         if(error)
