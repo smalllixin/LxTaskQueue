@@ -55,6 +55,9 @@ typedef NS_ENUM(NSUInteger, TestTaskType) {
     if (taskQueue && taskQueue.count > 0) {
         LxTask *task = taskQueue[0];
         [taskQueue removeObjectAtIndex:0];
+        if (taskQueue.count == 0) {
+            [_store removeObjectForKey:group];
+        }
         return task;
     }
     return nil;
@@ -91,6 +94,14 @@ typedef NS_ENUM(NSUInteger, TestTaskType) {
     return count;
 }
 
+- (NSInteger)taskCountInGroup:(NSString*)group {
+    NSArray *a = _store[group];
+    if (a) {
+        return a.count;
+    }
+    return 0;
+}
+
 @end
 
 @interface LxTaskQueueTests : XCTestCase<LxTaskRequisition>
@@ -119,6 +130,7 @@ typedef NS_ENUM(NSUInteger, TestTaskType) {
     XCTestExpectation *expectation = [self expectationWithDescription:@"testExecuteSimpleTask"];
     
     void (^simpleTaskExecutor)(LxTask *task, LxTaskCompleteMarker completeMaker) = ^void(LxTask *task, LxTaskCompleteMarker completeMaker) {
+        XCTAssertNotNil(task.data);
         completeMaker(task, LxTaskCompleteResultOk);
         [expectation fulfill];
     };
@@ -156,7 +168,8 @@ typedef NS_ENUM(NSUInteger, TestTaskType) {
     
     NSDictionary *data = @{};
     for (int i = 0; i < totalTask; i ++) {
-        LxTask *task = [[LxTask alloc] initWithType:kTestTaskTypeSimple data:data group:@"test" continueIfNotSuccess:NO];
+        NSString *group = [NSString stringWithFormat:@"%d", i%2];
+        LxTask *task = [[LxTask alloc] initWithType:kTestTaskTypeSimple data:data group:group continueIfNotSuccess:NO];
         [self.taskQueue enqueueTask:task];
     }
     
@@ -187,6 +200,56 @@ typedef NS_ENUM(NSUInteger, TestTaskType) {
     NSDictionary *data = @{};
     LxTask *task = [[LxTask alloc] initWithType:kTestTaskTypeSimple data:data group:@"test" continueIfNotSuccess:NO];
     [self.taskQueue enqueueTask:task];
+    
+    [self waitForExpectationsWithTimeout:2.0f handler:^(NSError *error) {
+        if(error)
+        {
+            NSLog(@"error is: %@", [error localizedDescription]);
+        }
+    }];
+}
+
+- (void)testTaskFailedTest {
+    XCTestExpectation *expectation = [self expectationWithDescription:@"testTaskFailedTest"];
+    __block int counter = 0;
+    void (^simpleTaskExecutor)(LxTask *task, LxTaskCompleteMarker completeMaker) = ^void(LxTask *task, LxTaskCompleteMarker completeMaker) {
+        NSDictionary *d = (NSDictionary*)task.data;
+        counter ++;
+        NSInteger n = [d[@"id"] integerValue];
+        if (n == 1) {
+            
+        } else {
+            XCTAssert(NO);
+        }
+        
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            completeMaker(task, LxTaskCompleteResultFailed);
+        });
+    };
+    
+    __block int cancelCounter = 0;
+    void (^cancelExecutor)(LxTask *task) = ^void(LxTask *task) {
+        NSDictionary *d = (NSDictionary*)task.data;
+        XCTAssertNotNil(d);
+        cancelCounter ++;
+        if (cancelCounter == 2 && [self.storage taskCount] == 0) {
+            XCTAssertEqual(counter, 1);
+            [expectation fulfill];
+        }
+    };
+    
+    [self.reg regDataType:kTestTaskTypeSimple executor:simpleTaskExecutor cancelListener:cancelExecutor];
+    self.taskQueue = [[LxTaskQueue alloc] initWithRegister:self.reg];
+    
+    
+    NSDictionary *data1 = @{@"id":@(1)};
+    LxTask *task1 = [[LxTask alloc] initWithType:kTestTaskTypeSimple data:data1 group:@"test" continueIfNotSuccess:NO];
+    [self.taskQueue enqueueTask:task1];
+    
+    NSDictionary *data2 = @{@"id":@(2)};
+    LxTask *task2 = [[LxTask alloc] initWithType:kTestTaskTypeSimple data:data2 group:@"test" continueIfNotSuccess:NO];
+    [self.taskQueue enqueueTask:task2];
+    
     
     [self waitForExpectationsWithTimeout:2.0f handler:^(NSError *error) {
         if(error)

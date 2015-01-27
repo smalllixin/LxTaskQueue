@@ -20,6 +20,7 @@
 @property (nonatomic, strong) LxTask *executingTask;
 @property (nonatomic, strong) NSObject *lock;
 
+@property (nonatomic, strong) LxTask *runningTask;
 @property (nonatomic, strong) LxTaskCompleteMarker completeMarker;
 @end
 
@@ -75,6 +76,7 @@
                 }
                     break;
             }
+            wself.runningTask = nil;
             [wself fireAvoidGroup:avoidGroup];
         }
     } copy];
@@ -100,6 +102,11 @@
 
 - (void)fireAvoidGroup:(NSString*)avoidGroup {
     dispatch_async(_taskQueue, ^{
+        @synchronized(_lock) {
+            if (_runningTask != nil) {
+                return;
+            }
+        }
         if ([_requisition isTaskRunnable]) {
             NSSet *availableGroups;
             @synchronized(_lock) {
@@ -121,14 +128,22 @@
                     //do not find any available group
                     return;
                 }
-                LxTask *task = [_storage topTaskFromGroup:pickGroup];
-                LxTaskExecutor executor = _taskExecutors[@(task.type)];
-                if (executor) {
-                    executor(task, _completeMarker);
-                } else {
-                    NSLog(@"tasktype:%d not registered", task.type);
-                    @synchronized(_lock) {
-                        [_storage dequeueTaskFromGroup:task.group];
+                LxTask *task;
+                @synchronized(_lock) {
+                    task = [_storage topTaskFromGroup:pickGroup];
+                }
+                if (task) {
+                    LxTaskExecutor executor = _taskExecutors[@(task.type)];
+                    if (executor) {
+                        @synchronized(_lock) {
+                            _runningTask = task;
+                        }
+                        executor(task, _completeMarker);
+                    } else {
+                        NSLog(@"tasktype:%d not registered", task.type);
+                        @synchronized(_lock) {
+                            [_storage dequeueTaskFromGroup:task.group];
+                        }
                     }
                 }
             }
