@@ -15,9 +15,13 @@
 
 - (NSDictionary*)executorMap;
 
+- (NSDictionary*)cancelListenerMap;
+
 - (id<LxTaskStorage>)storage;
 
 - (id<LxTaskRequisition>)requisition;
+
+- (NSInteger)maxRetryCount;
 
 @end
 

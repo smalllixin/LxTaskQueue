@@ -13,7 +13,13 @@
 
 - (BOOL)enqueueTask:(LxTask*)task;
 
+- (void)replaceQueueHead:(LxTask*)task;
+
 - (LxTask*)dequeueTaskFromGroup:(NSString*)group;
+
+- (LxTask*)topTaskFromGroup:(NSString*)group;
+
+- (NSArray*)removeAllTasksInGroup:(NSString*)group;
 
 - (NSSet*)availableGroups;
 

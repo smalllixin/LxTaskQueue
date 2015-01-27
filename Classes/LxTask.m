@@ -9,21 +9,26 @@
 #import "LxTask.h"
 
 @interface LxTask()
-
-@property (nonatomic, assign) int16_t type;
-@property (nonatomic, strong) id<NSCoding> data;
-@property (nonatomic, strong) NSString *group;
+@property (nonatomic, assign) NSInteger retriedCount;;
 @end
 
 @implementation LxTask
 
-- (instancetype)initWithType:(int16_t)executorType data:(id<NSCoding>)data group:(NSString*)group {
+- (instancetype)initWithType:(int16_t)executorType data:(id<NSCoding>)data group:(NSString*)group continueIfNotSuccess:(BOOL)continueIfNotSuccess {
     if (self = [super init]) {
         _type = executorType;
         _data = data;
         _group = group;
+        _continueIfNotSuccess = continueIfNotSuccess;
+        _retriedCount = 0;
     }
     return self;
+}
+
+- (instancetype)copyWithRetriedCount:(NSInteger)retriedCount {
+    LxTask *newTask = [self copy];
+    newTask.retriedCount = retriedCount;
+    return newTask;
 }
 
 #pragma mark - NSCoding
@@ -33,6 +38,8 @@
         _type = [aDecoder decodeIntForKey:@"type"];
         _data = [aDecoder decodeObjectForKey:@"data"];
         _group = [aDecoder decodeObjectForKey:@"group"];
+        _continueIfNotSuccess = [aDecoder decodeBoolForKey:@"continueIfNotSuccess"];
+        _retriedCount = [aDecoder decodeIntegerForKey:@"retriedCount"];
     }
     return self;
 }
@@ -41,6 +48,8 @@
     [aCoder encodeInt:_type forKey:@"type"];
     [aCoder encodeObject:_data forKey:@"data"];
     [aCoder encodeObject:_group forKey:@"group"];
+    [aCoder encodeBool:_continueIfNotSuccess forKey:@"continueIfNotSuccess"];
+    [aCoder encodeInteger:_retriedCount forKey:@"retriedCount"];
 }
 
 @end

@@ -10,10 +10,17 @@
 #import "_LxTaskRegister.h"
 
 @interface LxTaskQueue()
-@property (nonatomic, strong) NSDictionary *taskExecutorMap;
+
+@property (nonatomic, strong) NSDictionary *taskExecutors;
+@property (nonatomic, strong) NSDictionary *taskCancelListeners;
 @property (nonatomic, strong) id<LxTaskStorage> storage;
 @property (nonatomic, strong) dispatch_queue_t taskQueue;
 @property (nonatomic, strong) id<LxTaskRequisition> requisition;
+@property (nonatomic, assign) NSInteger maxRetryCount;
+@property (nonatomic, strong) LxTask *executingTask;
+@property (nonatomic, strong) NSObject *lock;
+
+@property (nonatomic, strong) LxTaskCompleteMarker completeMarker;
 @end
 
 @implementation LxTaskQueue
@@ -22,25 +29,123 @@
     if ((self = [super init]) && self == nil)
         return nil;
     
-    _taskExecutorMap = [reg executorMap];//immutable baby
+    _lock = [NSObject new];
+    
+    _taskExecutors = [reg executorMap];//immutable baby
+    _taskCancelListeners = [reg cancelListenerMap];
+    
     _storage = [reg storage];
     _requisition = [reg requisition];
+    _maxRetryCount = [reg maxRetryCount];
     
     _taskQueue = dispatch_queue_create("lxtaskqueue", DISPATCH_QUEUE_SERIAL);
     
     __weak typeof(self) wself = self;
+    _completeMarker = [^void(LxTask *task, LxTaskCompleteResult result) {
+        @synchronized(wself.lock) {
+            NSString *avoidGroup = nil;
+            switch (result) {
+                case LxTaskCompleteResultNeedRetry: {
+                    if (task.retriedCount > wself.maxRetryCount) {
+                        for (LxTask *t in [wself.storage removeAllTasksInGroup:task.group]) {
+                            [wself notifyTaskCancelled:t];
+                        }
+                    } else {
+                        avoidGroup = task.group;
+                        task = [task copyWithRetriedCount:task.retriedCount+1];
+                        [wself.storage replaceQueueHead:task];
+                    }
+                }
+                    break;
+                case LxTaskCompleteResultFailed: {
+                    if (task.continueIfNotSuccess) {
+                        [wself.storage dequeueTaskFromGroup:task.group];
+                        [wself notifyTaskCancelled:task];
+                    } else {
+                        for (LxTask *t in [wself.storage removeAllTasksInGroup:task.group]) {
+                            [wself notifyTaskCancelled:t];
+                        }
+                    }
+                }
+                    break;
+                case LxTaskCompleteResultOk:
+                default: {
+                    [wself.storage dequeueTaskFromGroup:task.group];
+                    [wself notifyTaskCancelled:task];
+                }
+                    break;
+            }
+            [wself fireAvoidGroup:avoidGroup];
+        }
+    } copy];
+    
     [_requisition taskRunnableStatusChange:^(BOOL couldRun) {
-        [wself envChanged:couldRun];
+        if (couldRun) {
+            [wself resumeIfStopped];
+        }
     }];
     return self;
 }
 
-- (void)envChanged:(BOOL)couldRun {
-    
+- (void)notifyTaskCancelled:(LxTask*)task {
+    LxTaskCancelListener cancelListener = _taskCancelListeners[@(task.type)];
+    if (cancelListener) {
+        cancelListener(task);
+    }
+}
+
+- (void)resumeIfStopped {
+    [self fireAvoidGroup:nil];
+}
+
+- (void)fireAvoidGroup:(NSString*)avoidGroup {
+    dispatch_async(_taskQueue, ^{
+        if ([_requisition isTaskRunnable]) {
+            NSSet *availableGroups;
+            @synchronized(_lock) {
+                availableGroups = [_storage availableGroups];
+            };
+            if (availableGroups.count > 0) {
+                NSString *pickGroup = nil;
+                if (avoidGroup) {
+                    for (NSString *group in availableGroups) {
+                        if (![group isEqualToString:avoidGroup]) {
+                            pickGroup = group;
+                        }
+                    }
+                } else {
+                    pickGroup = [availableGroups anyObject];
+                }
+                
+                if (pickGroup == nil) {
+                    //do not find any available group
+                    return;
+                }
+                LxTask *task = [_storage topTaskFromGroup:pickGroup];
+                LxTaskExecutor executor = _taskExecutors[@(task.type)];
+                if (executor) {
+                    executor(task, _completeMarker);
+                } else {
+                    NSLog(@"tasktype:%d not registered", task.type);
+                    @synchronized(_lock) {
+                        [_storage dequeueTaskFromGroup:task.group];
+                    }
+                }
+            }
+        }
+    });
 }
 
 - (void)enqueueTask:(LxTask*)task {
-    
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
+        @synchronized(_lock) {
+            //persist first
+            if (![_storage enqueueTask:task]) {
+                NSLog(@"ERROR: Task storage enqueue failed.");
+            }
+        }
+        [self resumeIfStopped];
+    });
 }
 
 @end
