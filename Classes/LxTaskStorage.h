@@ -11,9 +11,9 @@
 
 @protocol LxTaskStorage <NSObject>
 
-- (BOOL)enqueueTask:(LxTask*)task toGroup:(NSString*)group;
+- (BOOL)enqueueTask:(LxTask*)task;
 
-- (void)dequeueTaskFromGroup:(NSString*)group;
+- (LxTask*)dequeueTaskFromGroup:(NSString*)group;
 
 - (NSSet*)availableGroups;
 

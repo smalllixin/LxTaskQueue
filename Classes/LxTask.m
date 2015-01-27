@@ -17,9 +17,9 @@
 
 @implementation LxTask
 
-- (instancetype)initWithType:(int16_t)type data:(id<NSCoding>)data group:(NSString*)group {
+- (instancetype)initWithType:(int16_t)executorType data:(id<NSCoding>)data group:(NSString*)group {
     if (self = [super init]) {
-        _type = type;
+        _type = executorType;
         _data = data;
         _group = group;
     }

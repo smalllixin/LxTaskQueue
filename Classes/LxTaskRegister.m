@@ -12,6 +12,7 @@
 
 @property (nonatomic, strong) NSMutableDictionary *executorMap;
 @property (nonatomic, strong) id<LxTaskStorage> storage;
+@property (nonatomic, strong) id<LxTaskRequisition> requisition;
 
 @end
 
@@ -32,8 +33,20 @@
     _storage = storage;
 }
 
+- (void)regRequisition:(id<LxTaskRequisition>)requisition {
+    _requisition = requisition;
+}
+
 - (NSDictionary*)executorMap {
     return [[NSDictionary alloc] initWithDictionary:_executorMap];
+}
+
+- (id<LxTaskStorage>)storage {
+    return _storage;
+}
+
+- (id<LxTaskRequisition>)requisition {
+    return _requisition;
 }
 
 @end

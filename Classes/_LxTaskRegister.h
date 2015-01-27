@@ -15,6 +15,10 @@
 
 - (NSDictionary*)executorMap;
 
+- (id<LxTaskStorage>)storage;
+
+- (id<LxTaskRequisition>)requisition;
+
 @end
 
 #endif

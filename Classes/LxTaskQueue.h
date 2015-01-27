@@ -13,4 +13,6 @@
 
 - (instancetype)initWithRegister:(LxTaskRegister*)reg;
 
+- (void)enqueueTask:(LxTask*)task;
+
 @end

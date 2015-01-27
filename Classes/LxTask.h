@@ -10,8 +10,7 @@
 
 @interface LxTask : NSObject<NSCoding>
 
-
-- (instancetype)initWithType:(int16_t)type data:(id<NSCoding>)data group:(NSString*)group;
+- (instancetype)initWithType:(int16_t)executorType data:(id<NSCoding>)data group:(NSString*)group;
 
 @property (nonatomic, assign, readonly) int16_t type;
 @property (nonatomic, strong, readonly) id<NSCoding> data;
