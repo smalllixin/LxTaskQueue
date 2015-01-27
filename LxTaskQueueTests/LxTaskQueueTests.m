@@ -8,9 +8,15 @@
 
 #import <UIKit/UIKit.h>
 #import <XCTest/XCTest.h>
+#import "LxTaskQueue.h"
+
+typedef NS_ENUM(NSUInteger, TestTaskType) {
+    kTestTaskTypeSimple,
+};
 
 @interface LxTaskQueueTests : XCTestCase
 
+@property (nonatomic, strong) LxTaskQueue *taskQueue;
 @end
 
 @implementation LxTaskQueueTests
@@ -25,8 +31,18 @@
     [super tearDown];
 }
 
-- (void)testExample {
+- (void)testExecuteSimpleTask {
     // This is an example of a functional test case.
+    __block int executeCounter = 0;
+
+    LxTaskRegister *reg = [[LxTaskRegister alloc] init];
+    void (^simpleTaskExecutor)(id data) = ^void(id data) {
+        executeCounter ++;
+    };
+    
+    [reg regDataType:kTestTaskTypeSimple executor:simpleTaskExecutor];
+    self.taskQueue = [[LxTaskQueue alloc] initWithRegister:reg];
+
     XCTAssert(YES, @"Pass");
 }
 
