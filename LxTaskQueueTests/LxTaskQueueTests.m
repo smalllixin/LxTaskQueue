@@ -126,9 +126,9 @@ typedef NS_ENUM(NSUInteger, TestTaskType) {
     }];
 }
 
-- (void)testExecute10Tests {
+- (void)testExecuteManyTests {
     XCTestExpectation *expectation = [self expectationWithDescription:@"testExecute10Tests"];
-    int totalTask = 10;
+    int totalTask = 100;
     __block int counter = 0;
     void (^simpleTaskExecutor)(LxTask *task, LxTaskCompleteMarker completeMaker) = ^void(LxTask *task, LxTaskCompleteMarker completeMaker) {
         completeMaker(task, LxTaskCompleteResultOk);
@@ -137,7 +137,6 @@ typedef NS_ENUM(NSUInteger, TestTaskType) {
             [expectation fulfill];
         }
     };
-    
     
     [self.reg regDataType:kTestTaskTypeSimple executor:simpleTaskExecutor cancelListener:nil];
     self.taskQueue = [[LxTaskQueue alloc] initWithRegister:self.reg];
