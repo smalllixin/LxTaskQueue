@@ -15,4 +15,6 @@
 
 - (void)enqueueTask:(LxTask*)task;
 
+- (void)runBlockInQueue:(void(^)())block;
+
 @end

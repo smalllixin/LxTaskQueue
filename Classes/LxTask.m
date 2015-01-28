@@ -9,7 +9,7 @@
 #import "LxTask.h"
 
 @interface LxTask()
-@property (nonatomic, assign) NSInteger retriedCount;;
+@property (nonatomic, assign) NSInteger retriedCount;
 @end
 
 @implementation LxTask
@@ -29,6 +29,13 @@
     LxTask *newTask = [self copy];
     newTask.retriedCount = retriedCount;
     return newTask;
+}
+
+#pragma mark - Copy
+
+- (id)copyWithZone:(NSZone *)zone {
+    LxTask *object = [[LxTask alloc] initWithType:self.type data:self.data group:self.group continueIfNotSuccess:self.continueIfNotSuccess];
+    return object;
 }
 
 #pragma mark - NSCoding

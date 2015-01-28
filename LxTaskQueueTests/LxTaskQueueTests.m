@@ -9,113 +9,24 @@
 #import <UIKit/UIKit.h>
 #import <XCTest/XCTest.h>
 #import "LxTaskQueue.h"
+#import "LxTaskMemStorage.h"
 
 typedef NS_ENUM(NSUInteger, TestTaskType) {
     kTestTaskTypeSimple,
 };
 
-@interface SimpleTestStorage:NSObject<LxTaskStorage>
-
-@property (nonatomic, strong) NSMutableDictionary *store;
-
-@end
-
-@implementation SimpleTestStorage
-
-- (id)init {
-    if (self = [super init]) {
-        _store = [[NSMutableDictionary alloc] initWithCapacity:10];
-    }
-    return self;
-}
-
-- (void)appendTask:(LxTask*)task {
-    NSMutableArray *taskQueue = _store[task.group];
-    if (!taskQueue) {
-        taskQueue = [[NSMutableArray alloc] initWithCapacity:5];
-        _store[task.group] = taskQueue;
-    }
-    [taskQueue addObject:task];
-}
-
-- (BOOL)enqueueTask:(LxTask*)task {
-    [self appendTask:task];
-    return YES;
-}
-
-- (void)replaceQueueHead:(LxTask*)task {
-    NSMutableArray *taskQueue = _store[task.group];
-    if (taskQueue && taskQueue.count > 0) {
-        [taskQueue replaceObjectAtIndex:0 withObject:task];
-    }
-}
-
-- (LxTask*)dequeueTaskFromGroup:(NSString*)group {
-    NSMutableArray *taskQueue = _store[group];
-    if (taskQueue && taskQueue.count > 0) {
-        LxTask *task = taskQueue[0];
-        [taskQueue removeObjectAtIndex:0];
-        if (taskQueue.count == 0) {
-            [_store removeObjectForKey:group];
-        }
-        return task;
-    }
-    return nil;
-}
-
-- (LxTask*)topTaskFromGroup:(NSString*)group {
-    NSMutableArray *taskQueue = _store[group];
-    if (taskQueue && taskQueue.count > 0) {
-        return taskQueue[0];
-    }
-    return nil;
-}
-
-- (NSArray*)removeAllTasksInGroup:(NSString*)group {
-    NSMutableArray *taskQueue = _store[group];
-    if (taskQueue) {
-        [_store removeObjectForKey:group];
-    }
-    return taskQueue;
-}
-
-- (NSSet*)availableGroups {
-    return [NSSet setWithArray:[_store allKeys]];
-}
-
-
-#pragma mark - ForTest
-- (NSInteger)taskCount {
-    NSInteger count = 0;
-    for (NSString *key in _store) {
-        NSArray *t = _store[key];
-        count += t.count;
-    }
-    return count;
-}
-
-- (NSInteger)taskCountInGroup:(NSString*)group {
-    NSArray *a = _store[group];
-    if (a) {
-        return a.count;
-    }
-    return 0;
-}
-
-@end
-
 @interface LxTaskQueueTests : XCTestCase<LxTaskRequisition>
 
 @property (nonatomic, strong) LxTaskQueue *taskQueue;
 @property (nonatomic, strong) LxTaskRegister *reg;
-@property (nonatomic, strong) SimpleTestStorage *storage;
+@property (nonatomic, strong) LxTaskMemStorage *storage;
 @end
 
 @implementation LxTaskQueueTests
 
 - (void)setUp {
     [super setUp];
-    self.storage = [SimpleTestStorage new];
+    self.storage = [LxTaskMemStorage new];
     self.reg = [[LxTaskRegister alloc] init];
     [self.reg regRequisition:self];
     [self.reg regStorage:self.storage];
@@ -188,8 +99,10 @@ typedef NS_ENUM(NSUInteger, TestTaskType) {
         XCTAssertEqual([self.storage taskCount], 1);
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
             completeMaker(task, LxTaskCompleteResultOk);
-            XCTAssertEqual([self.storage taskCount], 0);
-            [expectation fulfill];
+            [self.taskQueue runBlockInQueue:^{
+                XCTAssertEqual([self.storage taskCount], 0);
+                [expectation fulfill];
+            }];
         });
     };
     
@@ -236,6 +149,57 @@ typedef NS_ENUM(NSUInteger, TestTaskType) {
             XCTAssertEqual(counter, 1);
             [expectation fulfill];
         }
+    };
+    
+    [self.reg regDataType:kTestTaskTypeSimple executor:simpleTaskExecutor cancelListener:cancelExecutor];
+    self.taskQueue = [[LxTaskQueue alloc] initWithRegister:self.reg];
+    
+    
+    NSDictionary *data1 = @{@"id":@(1)};
+    LxTask *task1 = [[LxTask alloc] initWithType:kTestTaskTypeSimple data:data1 group:@"test" continueIfNotSuccess:NO];
+    [self.taskQueue enqueueTask:task1];
+    
+    NSDictionary *data2 = @{@"id":@(2)};
+    LxTask *task2 = [[LxTask alloc] initWithType:kTestTaskTypeSimple data:data2 group:@"test" continueIfNotSuccess:NO];
+    [self.taskQueue enqueueTask:task2];
+    
+    
+    [self waitForExpectationsWithTimeout:2.0f handler:^(NSError *error) {
+        if(error)
+        {
+            NSLog(@"error is: %@", [error localizedDescription]);
+        }
+    }];
+}
+
+- (void)testRetryTest {
+    XCTestExpectation *expectation = [self expectationWithDescription:@"testRetryTest"];
+    __block int counter = 0;
+    __block int failedCounter = 0;
+    void (^simpleTaskExecutor)(LxTask *task, LxTaskCompleteMarker completeMaker) = ^void(LxTask *task, LxTaskCompleteMarker completeMaker) {
+        NSDictionary *d = (NSDictionary*)task.data;
+        XCTAssertNotNil(d);
+        if (failedCounter == 0) {
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                completeMaker(task, LxTaskCompleteResultNeedRetry);
+            });
+            failedCounter ++;
+            return;
+        }
+        
+        counter ++;
+        
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            completeMaker(task, LxTaskCompleteResultOk);
+            if (counter == 2) {
+                XCTAssertEqual(failedCounter, 1);
+                [expectation fulfill];
+            }
+        });
+    };
+    
+    void (^cancelExecutor)(LxTask *task) = ^void(LxTask *task) {
+        XCTAssert(NO);
     };
     
     [self.reg regDataType:kTestTaskTypeSimple executor:simpleTaskExecutor cancelListener:cancelExecutor];

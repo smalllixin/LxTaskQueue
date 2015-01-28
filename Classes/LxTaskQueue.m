@@ -43,42 +43,43 @@
     
     __weak typeof(self) wself = self;
     _completeMarker = [^void(LxTask *task, LxTaskCompleteResult result) {
-        @synchronized(wself.lock) {
-            NSString *avoidGroup = nil;
-            switch (result) {
-                case LxTaskCompleteResultNeedRetry: {
-                    if (task.retriedCount > wself.maxRetryCount) {
-                        for (LxTask *t in [wself.storage removeAllTasksInGroup:task.group]) {
-                            [wself notifyTaskCancelled:t];
+        dispatch_async(wself.taskQueue, ^{
+            @synchronized(wself.lock) {
+                NSString *avoidGroup = nil;
+                switch (result) {
+                    case LxTaskCompleteResultNeedRetry: {
+                        if (task.retriedCount > wself.maxRetryCount) {
+                            for (LxTask *t in [wself.storage removeAllTasksInGroup:task.group]) {
+                                [wself notifyTaskCancelled:t];
+                            }
+                        } else {
+                            avoidGroup = task.group;
+                            LxTask *copiedTask = [task copyWithRetriedCount:task.retriedCount+1];
+                            [wself.storage replaceQueueHead:copiedTask];
                         }
-                    } else {
-                        avoidGroup = task.group;
-                        task = [task copyWithRetriedCount:task.retriedCount+1];
-                        [wself.storage replaceQueueHead:task];
                     }
-                }
-                    break;
-                case LxTaskCompleteResultFailed: {
-                    if (task.continueIfNotSuccess) {
+                        break;
+                    case LxTaskCompleteResultFailed: {
+                        if (task.continueIfNotSuccess) {
+                            [wself.storage dequeueTaskFromGroup:task.group];
+                            [wself notifyTaskCancelled:task];
+                        } else {
+                            for (LxTask *t in [wself.storage removeAllTasksInGroup:task.group]) {
+                                [wself notifyTaskCancelled:t];
+                            }
+                        }
+                    }
+                        break;
+                    case LxTaskCompleteResultOk:
+                    default: {
                         [wself.storage dequeueTaskFromGroup:task.group];
-                        [wself notifyTaskCancelled:task];
-                    } else {
-                        for (LxTask *t in [wself.storage removeAllTasksInGroup:task.group]) {
-                            [wself notifyTaskCancelled:t];
-                        }
                     }
+                        break;
                 }
-                    break;
-                case LxTaskCompleteResultOk:
-                default: {
-                    [wself.storage dequeueTaskFromGroup:task.group];
-                    [wself notifyTaskCancelled:task];
-                }
-                    break;
+                wself.runningTask = nil;
+                [wself fireAvoidGroup:avoidGroup];
             }
-            wself.runningTask = nil;
-            [wself fireAvoidGroup:avoidGroup];
-        }
+        });
     } copy];
     
     [_requisition taskRunnableStatusChange:^(BOOL couldRun) {
@@ -119,6 +120,9 @@
                         if (![group isEqualToString:avoidGroup]) {
                             pickGroup = group;
                         }
+                    }
+                    if (pickGroup == nil) {
+                        pickGroup = [availableGroups anyObject];
                     }
                 } else {
                     pickGroup = [availableGroups anyObject];
@@ -161,6 +165,10 @@
         }
         [self resumeIfStopped];
     });
+}
+
+- (void)runBlockInQueue:(void(^)())block {
+    dispatch_async(_taskQueue, block);
 }
 
 @end

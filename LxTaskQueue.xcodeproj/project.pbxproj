@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		82BEB5D91A773D26004855BA /* LxTask.m in Sources */ = {isa = PBXBuildFile; fileRef = 82BEB5D81A773D26004855BA /* LxTask.m */; };
 		82BEB5DC1A7743C2004855BA /* LxTaskRegister.m in Sources */ = {isa = PBXBuildFile; fileRef = 82BEB5DB1A7743C2004855BA /* LxTaskRegister.m */; };
+		82BEB5E31A788541004855BA /* LxTaskMemStorage.m in Sources */ = {isa = PBXBuildFile; fileRef = 82BEB5E21A788541004855BA /* LxTaskMemStorage.m */; };
 		82E76BBB1A765BE000B66257 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 82E76BBA1A765BE000B66257 /* main.m */; };
 		82E76BBE1A765BE000B66257 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 82E76BBD1A765BE000B66257 /* AppDelegate.m */; };
 		82E76BC11A765BE000B66257 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 82E76BC01A765BE000B66257 /* ViewController.m */; };
@@ -36,6 +37,8 @@
 		82BEB5DB1A7743C2004855BA /* LxTaskRegister.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LxTaskRegister.m; sourceTree = "<group>"; };
 		82BEB5DD1A7743E2004855BA /* LxTaskStorage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LxTaskStorage.h; sourceTree = "<group>"; };
 		82BEB5E01A77473D004855BA /* _LxTaskRegister.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = _LxTaskRegister.h; sourceTree = "<group>"; };
+		82BEB5E11A788541004855BA /* LxTaskMemStorage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LxTaskMemStorage.h; sourceTree = "<group>"; };
+		82BEB5E21A788541004855BA /* LxTaskMemStorage.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LxTaskMemStorage.m; sourceTree = "<group>"; };
 		82E76BB51A765BE000B66257 /* LxTaskQueue.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LxTaskQueue.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		82E76BB91A765BE000B66257 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		82E76BBA1A765BE000B66257 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
@@ -142,6 +145,8 @@
 				82BEB5DD1A7743E2004855BA /* LxTaskStorage.h */,
 				82BEB5D71A773D26004855BA /* LxTask.h */,
 				82BEB5D81A773D26004855BA /* LxTask.m */,
+				82BEB5E11A788541004855BA /* LxTaskMemStorage.h */,
+				82BEB5E21A788541004855BA /* LxTaskMemStorage.m */,
 			);
 			path = Classes;
 			sourceTree = "<group>";
@@ -251,6 +256,7 @@
 				82E76BBE1A765BE000B66257 /* AppDelegate.m in Sources */,
 				82BEB5DC1A7743C2004855BA /* LxTaskRegister.m in Sources */,
 				82BEB5D91A773D26004855BA /* LxTask.m in Sources */,
+				82BEB5E31A788541004855BA /* LxTaskMemStorage.m in Sources */,
 				82E76BBB1A765BE000B66257 /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
