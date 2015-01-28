@@ -10,6 +10,7 @@
 #import <XCTest/XCTest.h>
 #import "LxTaskQueue.h"
 #import "LxTaskMemStorage.h"
+#import "LxTaskSqliteStorage.h"
 
 typedef NS_ENUM(NSUInteger, TestTaskType) {
     kTestTaskTypeSimple,
@@ -19,14 +20,16 @@ typedef NS_ENUM(NSUInteger, TestTaskType) {
 
 @property (nonatomic, strong) LxTaskQueue *taskQueue;
 @property (nonatomic, strong) LxTaskRegister *reg;
-@property (nonatomic, strong) LxTaskMemStorage *storage;
+//@property (nonatomic, strong) LxTaskMemStorage *storage;
+@property (nonatomic, strong) LxTaskSqliteStorage *storage;
 @end
 
 @implementation LxTaskQueueTests
 
 - (void)setUp {
     [super setUp];
-    self.storage = [LxTaskMemStorage new];
+//    self.storage = [LxTaskMemStorage new];
+    self.storage = [LxTaskSqliteStorage new];
     self.reg = [[LxTaskRegister alloc] init];
     [self.reg regRequisition:self];
     [self.reg regStorage:self.storage];

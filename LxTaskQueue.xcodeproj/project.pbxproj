@@ -10,6 +10,9 @@
 		82BEB5D91A773D26004855BA /* LxTask.m in Sources */ = {isa = PBXBuildFile; fileRef = 82BEB5D81A773D26004855BA /* LxTask.m */; };
 		82BEB5DC1A7743C2004855BA /* LxTaskRegister.m in Sources */ = {isa = PBXBuildFile; fileRef = 82BEB5DB1A7743C2004855BA /* LxTaskRegister.m */; };
 		82BEB5E31A788541004855BA /* LxTaskMemStorage.m in Sources */ = {isa = PBXBuildFile; fileRef = 82BEB5E21A788541004855BA /* LxTaskMemStorage.m */; };
+		82BEB5E61A789500004855BA /* LxTaskSqliteStorage.m in Sources */ = {isa = PBXBuildFile; fileRef = 82BEB5E51A789500004855BA /* LxTaskSqliteStorage.m */; };
+		82BEB5E81A78952C004855BA /* libsqlite3.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 82BEB5E71A78952C004855BA /* libsqlite3.dylib */; };
+		82BEB5EC1A789C43004855BA /* TaskSqliteStorageTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 82BEB5EB1A789C43004855BA /* TaskSqliteStorageTest.m */; };
 		82E76BBB1A765BE000B66257 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 82E76BBA1A765BE000B66257 /* main.m */; };
 		82E76BBE1A765BE000B66257 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 82E76BBD1A765BE000B66257 /* AppDelegate.m */; };
 		82E76BC11A765BE000B66257 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 82E76BC01A765BE000B66257 /* ViewController.m */; };
@@ -39,6 +42,10 @@
 		82BEB5E01A77473D004855BA /* _LxTaskRegister.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = _LxTaskRegister.h; sourceTree = "<group>"; };
 		82BEB5E11A788541004855BA /* LxTaskMemStorage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LxTaskMemStorage.h; sourceTree = "<group>"; };
 		82BEB5E21A788541004855BA /* LxTaskMemStorage.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LxTaskMemStorage.m; sourceTree = "<group>"; };
+		82BEB5E41A789500004855BA /* LxTaskSqliteStorage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LxTaskSqliteStorage.h; sourceTree = "<group>"; };
+		82BEB5E51A789500004855BA /* LxTaskSqliteStorage.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LxTaskSqliteStorage.m; sourceTree = "<group>"; };
+		82BEB5E71A78952C004855BA /* libsqlite3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libsqlite3.dylib; path = usr/lib/libsqlite3.dylib; sourceTree = SDKROOT; };
+		82BEB5EB1A789C43004855BA /* TaskSqliteStorageTest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TaskSqliteStorageTest.m; sourceTree = "<group>"; };
 		82E76BB51A765BE000B66257 /* LxTaskQueue.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LxTaskQueue.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		82E76BB91A765BE000B66257 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		82E76BBA1A765BE000B66257 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
@@ -61,6 +68,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				82BEB5E81A78952C004855BA /* libsqlite3.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -77,6 +85,7 @@
 		82E76BAC1A765BE000B66257 = {
 			isa = PBXGroup;
 			children = (
+				82BEB5E71A78952C004855BA /* libsqlite3.dylib */,
 				82E76BDE1A765D7D00B66257 /* Classes */,
 				82E76BB71A765BE000B66257 /* LxTaskQueue */,
 				82E76BD11A765BE000B66257 /* LxTaskQueueTests */,
@@ -121,6 +130,7 @@
 			isa = PBXGroup;
 			children = (
 				82E76BD41A765BE000B66257 /* LxTaskQueueTests.m */,
+				82BEB5EB1A789C43004855BA /* TaskSqliteStorageTest.m */,
 				82E76BD21A765BE000B66257 /* Supporting Files */,
 			);
 			path = LxTaskQueueTests;
@@ -147,6 +157,8 @@
 				82BEB5D81A773D26004855BA /* LxTask.m */,
 				82BEB5E11A788541004855BA /* LxTaskMemStorage.h */,
 				82BEB5E21A788541004855BA /* LxTaskMemStorage.m */,
+				82BEB5E41A789500004855BA /* LxTaskSqliteStorage.h */,
+				82BEB5E51A789500004855BA /* LxTaskSqliteStorage.m */,
 			);
 			path = Classes;
 			sourceTree = "<group>";
@@ -257,6 +269,7 @@
 				82BEB5DC1A7743C2004855BA /* LxTaskRegister.m in Sources */,
 				82BEB5D91A773D26004855BA /* LxTask.m in Sources */,
 				82BEB5E31A788541004855BA /* LxTaskMemStorage.m in Sources */,
+				82BEB5E61A789500004855BA /* LxTaskSqliteStorage.m in Sources */,
 				82E76BBB1A765BE000B66257 /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -265,6 +278,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				82BEB5EC1A789C43004855BA /* TaskSqliteStorageTest.m in Sources */,
 				82E76BD51A765BE000B66257 /* LxTaskQueueTests.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

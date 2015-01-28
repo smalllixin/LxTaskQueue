@@ -6,3 +6,4 @@ TODO list:
 - test retry
 - test requisition
 - sqlite storage
+- test crash & recovery
