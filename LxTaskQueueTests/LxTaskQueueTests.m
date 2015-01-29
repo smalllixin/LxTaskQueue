@@ -35,6 +35,7 @@ typedef NS_ENUM(NSUInteger, TestTaskType) {
     self.reg = [[LxTaskRegister alloc] init];
     [self.reg regRequisition:self];
     [self.reg regStorage:self.storage];
+    [self.reg regMaxRetryCount:10];
     _isRunnable = YES;
 }
 
@@ -213,6 +214,47 @@ typedef NS_ENUM(NSUInteger, TestTaskType) {
     
     void (^cancelExecutor)(LxTask *task) = ^void(LxTask *task) {
         XCTAssert(NO);
+    };
+    
+    [self.reg regDataType:kTestTaskTypeSimple executor:simpleTaskExecutor cancelListener:cancelExecutor];
+    self.taskQueue = [[LxTaskQueue alloc] initWithRegister:self.reg];
+    
+    
+    NSDictionary *data1 = @{@"id":@(1)};
+    LxTask *task1 = [[LxTask alloc] initWithType:kTestTaskTypeSimple data:data1 group:@"test" continueIfNotSuccess:NO];
+    [self.taskQueue enqueueTask:task1];
+    
+    NSDictionary *data2 = @{@"id":@(2)};
+    LxTask *task2 = [[LxTask alloc] initWithType:kTestTaskTypeSimple data:data2 group:@"test" continueIfNotSuccess:NO];
+    [self.taskQueue enqueueTask:task2];
+    
+    
+    [self waitForExpectationsWithTimeout:2.0f handler:^(NSError *error) {
+        if(error)
+        {
+            NSLog(@"error is: %@", [error localizedDescription]);
+        }
+    }];
+}
+
+- (void)testRetryOutofTimesTest {
+    XCTestExpectation *expectation = [self expectationWithDescription:@"testRetryOutofTimesTest"];
+    __block int failedCounter = 0;
+    void (^simpleTaskExecutor)(LxTask *task, LxTaskCompleteMarker completeMaker) = ^void(LxTask *task, LxTaskCompleteMarker completeMaker) {
+        NSDictionary *d = (NSDictionary*)task.data;
+        XCTAssertNotNil(d);
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            completeMaker(task, LxTaskCompleteResultNeedRetry);
+        });
+        failedCounter ++;
+    };
+    
+    __block int cancelCounter = 0;
+    void (^cancelExecutor)(LxTask *task) = ^void(LxTask *task) {
+        cancelCounter ++;
+        if (cancelCounter == 2) {
+            [expectation fulfill];
+        }
     };
     
     [self.reg regDataType:kTestTaskTypeSimple executor:simpleTaskExecutor cancelListener:cancelExecutor];
