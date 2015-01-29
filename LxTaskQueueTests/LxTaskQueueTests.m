@@ -22,6 +22,8 @@ typedef NS_ENUM(NSUInteger, TestTaskType) {
 @property (nonatomic, strong) LxTaskRegister *reg;
 //@property (nonatomic, strong) LxTaskMemStorage *storage;
 @property (nonatomic, strong) LxTaskSqliteStorage *storage;
+
+@property (nonatomic, assign) BOOL isRunnable;
 @end
 
 @implementation LxTaskQueueTests
@@ -29,14 +31,20 @@ typedef NS_ENUM(NSUInteger, TestTaskType) {
 - (void)setUp {
     [super setUp];
 //    self.storage = [LxTaskMemStorage new];
-    self.storage = [LxTaskSqliteStorage new];
+    self.storage = [[LxTaskSqliteStorage alloc] initWithDbName:@"test"];
     self.reg = [[LxTaskRegister alloc] init];
     [self.reg regRequisition:self];
     [self.reg regStorage:self.storage];
+    _isRunnable = YES;
 }
 
 - (void)tearDown {
     // Put teardown code here. This method is called after the invocation of each test method in the class.
+    _isRunnable = NO;
+    [self.taskQueue syncQueueStopped];
+    [self.taskQueue runBlockSync:^{
+        [self.storage destoryDb];
+    }];
     [super tearDown];
 }
 
@@ -194,10 +202,12 @@ typedef NS_ENUM(NSUInteger, TestTaskType) {
         
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
             completeMaker(task, LxTaskCompleteResultOk);
-            if (counter == 2) {
-                XCTAssertEqual(failedCounter, 1);
-                [expectation fulfill];
-            }
+            [self.taskQueue runBlockInQueue:^{
+                if (counter == 2) {
+                    XCTAssertEqual(failedCounter, 1);
+                    [expectation fulfill];
+                }
+            }];
         });
     };
     
@@ -228,7 +238,7 @@ typedef NS_ENUM(NSUInteger, TestTaskType) {
 
 #pragma mark LxTaskRequisition
 - (BOOL)isTaskRunnable {
-    return YES;
+    return _isRunnable;
 }
 
 - (void)taskRunnableStatusChange:(void(^)(BOOL couldRun))listener {

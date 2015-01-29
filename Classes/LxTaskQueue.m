@@ -26,6 +26,10 @@
 
 @implementation LxTaskQueue
 
+- (void)dealloc {
+    
+}
+
 - (instancetype)initWithRegister:(LxTaskRegister*)reg {
     if ((self = [super init]) && self == nil)
         return nil;
@@ -169,6 +173,18 @@
 
 - (void)runBlockInQueue:(void(^)())block {
     dispatch_async(_taskQueue, block);
+}
+
+- (void)runBlockSync:(void(^)())block {
+    @synchronized(self) {
+        block();
+    }
+}
+
+- (void)syncQueueStopped {
+    dispatch_sync(_taskQueue, ^{
+        
+    });
 }
 
 @end

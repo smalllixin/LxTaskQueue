@@ -158,7 +158,6 @@
         }
     }
     sqlite3_finalize(stmt);
-    NSAssert(rc == SQLITE_OK, @"");
     return task;
 }
 

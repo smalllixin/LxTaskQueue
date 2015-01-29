@@ -17,4 +17,8 @@
 
 - (void)runBlockInQueue:(void(^)())block;
 
+- (void)runBlockSync:(void(^)())block;
+
+- (void)syncQueueStopped;
+
 @end
