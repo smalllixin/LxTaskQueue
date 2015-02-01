@@ -21,7 +21,7 @@
 @property (nonatomic, strong) NSObject *lock;
 
 @property (nonatomic, strong) LxTask *runningTask;
-@property (nonatomic, strong) LxTaskCompleteMarker completeMarker;
+@property (nonatomic, strong) void(^completeMarker)(LxTask *task, LxTaskCompleteResult result);
 @end
 
 @implementation LxTaskQueue
@@ -146,7 +146,10 @@
                         @synchronized(_lock) {
                             _runningTask = task;
                         }
-                        executor(task, _completeMarker);
+                        LxTaskCompleteMarker complete = ^void(LxTaskCompleteResult result) {
+                            _completeMarker(task, result);
+                        };
+                        executor(task, complete);
                     } else {
                         NSLog(@"tasktype:%d not registered", task.type);
                         @synchronized(_lock) {

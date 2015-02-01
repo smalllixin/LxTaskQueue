@@ -16,7 +16,7 @@ typedef NS_ENUM(NSUInteger, LxTaskCompleteResult) {
     LxTaskCompleteResultNeedRetry
 };
 
-typedef void (^LxTaskCompleteMarker)(LxTask *task, LxTaskCompleteResult result);
+typedef void (^LxTaskCompleteMarker)(LxTaskCompleteResult result);
 typedef void (^LxTaskExecutor)(LxTask *task, LxTaskCompleteMarker completeMaker);
 typedef void (^LxTaskCancelListener)(LxTask *task);
 
