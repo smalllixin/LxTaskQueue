@@ -15,13 +15,14 @@
 @property (nonatomic, strong) NSDictionary *taskCancelListeners;
 @property (nonatomic, strong) id<LxTaskStorage> storage;
 @property (nonatomic, strong) dispatch_queue_t taskQueue;
+@property (nonatomic, strong) dispatch_queue_t serialQueue;
 @property (nonatomic, strong) id<LxTaskRequisition> requisition;
 @property (nonatomic, assign) NSInteger maxRetryCount;
 @property (nonatomic, strong) LxTask *executingTask;
 @property (nonatomic, strong) NSObject *lock;
 
 @property (nonatomic, strong) LxTask *runningTask;
-@property (nonatomic, strong) void(^completeMarker)(LxTask *task, LxTaskCompleteResult result);
+@property (nonatomic, strong) void(^completeMarker)(LxTask *task, LxTaskCompleteResult result, id<NSCoding> dataPassing);
 @end
 
 @implementation LxTaskQueue
@@ -44,9 +45,10 @@
     _maxRetryCount = [reg maxRetryCount];
     
     _taskQueue = dispatch_queue_create("lxtaskqueue", DISPATCH_QUEUE_SERIAL);
+    _serialQueue = dispatch_queue_create("lxserialqueue", DISPATCH_QUEUE_SERIAL);
     
     __weak typeof(self) wself = self;
-    _completeMarker = [^void(LxTask *task, LxTaskCompleteResult result) {
+    _completeMarker = [^void(LxTask *task, LxTaskCompleteResult result, id<NSCoding> dataPassing) {
         dispatch_async(wself.taskQueue, ^{
             @synchronized(wself.lock) {
                 NSString *avoidGroup = nil;
@@ -54,7 +56,7 @@
                     case LxTaskCompleteResultNeedRetry: {
                         if (task.retriedCount > wself.maxRetryCount) {
                             for (LxTask *t in [wself.storage removeAllTasksInGroup:task.group]) {
-                                [wself notifyTaskCancelled:t];
+                                [wself notifyTaskCancelled:t dataPassing:dataPassing];
                             }
                         } else {
                             avoidGroup = task.group;
@@ -66,10 +68,10 @@
                     case LxTaskCompleteResultFailed: {
                         if (task.continueIfNotSuccess) {
                             [wself.storage dequeueTaskFromGroup:task.group];
-                            [wself notifyTaskCancelled:task];
+                            [wself notifyTaskCancelled:task dataPassing:dataPassing];
                         } else {
                             for (LxTask *t in [wself.storage removeAllTasksInGroup:task.group]) {
-                                [wself notifyTaskCancelled:t];
+                                [wself notifyTaskCancelled:t dataPassing:dataPassing];
                             }
                         }
                     }
@@ -77,6 +79,11 @@
                     case LxTaskCompleteResultOk:
                     default: {
                         [wself.storage dequeueTaskFromGroup:task.group];
+                        LxTask *topTask = [wself.storage topTaskFromGroup:task.group];
+                        if (topTask) {
+                            topTask.prevTaskResult = dataPassing;
+                            [wself.storage replaceQueueHead:topTask];
+                        }
                     }
                         break;
                 }
@@ -94,9 +101,10 @@
     return self;
 }
 
-- (void)notifyTaskCancelled:(LxTask*)task {
+- (void)notifyTaskCancelled:(LxTask*)task dataPassing:(id<NSCoding>)dataPassing {
     LxTaskCancelListener cancelListener = _taskCancelListeners[@(task.type)];
     if (cancelListener) {
+        task.prevTaskResult = dataPassing;
         cancelListener(task);
     }
 }
@@ -146,8 +154,8 @@
                         @synchronized(_lock) {
                             _runningTask = task;
                         }
-                        LxTaskCompleteMarker complete = ^void(LxTaskCompleteResult result) {
-                            _completeMarker(task, result);
+                        LxTaskCompleteMarker complete = ^void(LxTaskCompleteResult result, id<NSCoding> dataPassing) {
+                            _completeMarker(task, result, dataPassing);
                         };
                         executor(task, complete);
                     } else {
@@ -163,7 +171,7 @@
 }
 
 - (void)enqueueTask:(LxTask*)task {
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
+    dispatch_async(_serialQueue, ^{
         @synchronized(_lock) {
             //persist first
             if (![_storage enqueueTask:task]) {

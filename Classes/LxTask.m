@@ -35,6 +35,7 @@
 
 - (id)copyWithZone:(NSZone *)zone {
     LxTask *object = [[LxTask alloc] initWithType:self.type data:self.data group:self.group continueIfNotSuccess:self.continueIfNotSuccess];
+    object.prevTaskResult = self.prevTaskResult;
     return object;
 }
 
@@ -44,6 +45,7 @@
     if (self = [super init]) {
         _type = [aDecoder decodeIntForKey:@"type"];
         _data = [aDecoder decodeObjectForKey:@"data"];
+        _prevTaskResult = [aDecoder decodeObjectForKey:@"prevTaskResult"];
         _group = [aDecoder decodeObjectForKey:@"group"];
         _continueIfNotSuccess = [aDecoder decodeBoolForKey:@"continueIfNotSuccess"];
         _retriedCount = [aDecoder decodeIntegerForKey:@"retriedCount"];
@@ -54,6 +56,7 @@
 - (void)encodeWithCoder:(NSCoder *)aCoder {
     [aCoder encodeInt:_type forKey:@"type"];
     [aCoder encodeObject:_data forKey:@"data"];
+    [aCoder encodeObject:_prevTaskResult forKey:@"prevTaskResult"];
     [aCoder encodeObject:_group forKey:@"group"];
     [aCoder encodeBool:_continueIfNotSuccess forKey:@"continueIfNotSuccess"];
     [aCoder encodeInteger:_retriedCount forKey:@"retriedCount"];

@@ -16,6 +16,7 @@
 
 @property (nonatomic, assign, readonly) int16_t type;
 @property (nonatomic, strong, readonly) id<NSCoding> data;
+@property (nonatomic, strong) id<NSCoding> prevTaskResult;
 @property (nonatomic, strong, readonly) NSString *group;
 @property (nonatomic, assign, readonly) BOOL continueIfNotSuccess; //if execute failed effect the other tasks in same group
 @property (nonatomic, assign, readonly) NSInteger retriedCount;
