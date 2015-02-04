@@ -57,11 +57,18 @@
         NSAssert(NO, @"create table failed");
     }
     
-    const char *idxsql = "CREATE INDEX IF NOT EXISTS task_sort_index ON Tasks (groupId,sortValue)";
-    if (sqlite3_exec(db, idxsql, NULL, NULL, &errMsg) != SQLITE_OK) {
-        NSLog(@"%@", [NSString stringWithUTF8String:errMsg]);
-        NSAssert(NO, @"create table failed");
-    }
+    void (^createIdx)(const char* columnName) = ^(const char* columnName){
+        char *errMsg;
+        char idxsql[256];
+        sprintf(idxsql, "CREATE INDEX IF NOT EXISTS %s_index ON Tasks (%s)", columnName, columnName);
+        if (sqlite3_exec(db, idxsql, NULL, NULL, &errMsg) != SQLITE_OK) {
+            NSLog(@"%@", [NSString stringWithUTF8String:errMsg]);
+            NSAssert(NO, @"create index failed");
+        }
+    };
+    
+    createIdx("groupId");
+    createIdx("sortValue");
 }
 
 #pragma mark Utils
